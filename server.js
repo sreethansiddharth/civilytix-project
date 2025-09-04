@@ -1,0 +1,21 @@
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { connectDB } from './config/config/db.js';
+import authRoutes from './src/routes/auth.js';
+import paymentsRoutes, { webhookHandler, webhookRaw } from './src/routes/payments.js';
+dotenv.config();
+const app = express();
+app.post('/api/payments/webhook', webhookRaw, webhookHandler);
+app.use(cors());
+app.use(express.json());
+await connectDB();
+app.use('/api/auth', authRoutes);
+app.use('/api/payments', paymentsRoutes);
+app.get('/health', (_req, res) => res.json({ ok: true }));
+
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`Server running on :${PORT}`));
