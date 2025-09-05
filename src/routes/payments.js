@@ -4,11 +4,9 @@ import User from '../models/User.js';
 import Order from '../models/Order.js';
 import { authRequired } from '../middleware/auth.js';
 import express from 'express';
-
 const router = Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const webhookRaw = express.raw({ type: 'application/json' });
-
 export const webhookHandler = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -22,7 +20,6 @@ export const webhookHandler = async (req, res) => {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-
   try {
     if (event.type === 'payment_intent.succeeded') {
       const pi = event.data.object;
@@ -31,7 +28,6 @@ export const webhookHandler = async (req, res) => {
       if (order) {
         order.status = 'succeeded';
         await order.save();
-
         const user = await User.findById(order.userId);
         if (user) {
           const plan = (pi.metadata && pi.metadata.plan) || 'lifetime';
@@ -40,7 +36,6 @@ export const webhookHandler = async (req, res) => {
         }
       }
     }
-
     if (event.type === 'payment_intent.payment_failed') {
       const pi = event.data.object;
       const paymentIntentId = pi.id;
@@ -48,12 +43,9 @@ export const webhookHandler = async (req, res) => {
     }
   } catch (err) {
     console.error('Webhook processing error:', err);
-
   }
-
   return res.status(200).json({ received: true });
 };
-
 router.post('/create-intent', authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -104,5 +96,4 @@ router.post('/create-intent', authRequired, async (req, res) => {
     return res.status(500).json({ error: 'Failed to create payment intent' });
   }
 });
-
 export default router;
